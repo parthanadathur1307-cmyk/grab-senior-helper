@@ -1,84 +1,23 @@
-import google.generativeai as genai
+import openai
 
 class AIChatbot:
-    def __init__(self, api_key):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
-        
-    def search_restaurants(self, user_request, restaurants_data, language='english'):
-        """
-        Use AI to search for restaurants based on user request
-        Considers dietary restrictions and price preferences
-        """
-        prompt = f"""
-        User request: {user_request}
-        Language: {language}
-        
-        Available restaurants data:
-        {restaurants_data}
-        
-        Based on the user's request, recommend the best restaurant and dish.
-        Consider:
-        - Food preference (e.g., chicken rice, fish dishes)
-        - Dietary restrictions if mentioned
-        - Price preferences if mentioned
-        - Rating of restaurants
-        
-        Provide a clear recommendation with restaurant name, dish, price, and reason.
-        """
-        
-        response = self.model.generate_content(prompt)
-        return response.text
-    
-    def search_menu_items(self, user_request, menu_data, language='english'):
-        """
-        Use AI to search for specific items in uploaded menus
-        """
-        prompt = f"""
-        User request: {user_request}
-        Language: {language}
-        
-        Available menu items:
-        {menu_data}
-        
-        Find and recommend dishes that match the user's request.
-        Consider dietary restrictions and price preferences if mentioned.
-        Provide dish name, description, and price.
-        """
-        
-        response = self.model.generate_content(prompt)
-        return response.text
-    
-    def translate_request(self, text, target_language='english'):
-        """
-        Translate user input to English for processing
-        Supports: English, Chinese, Malay, Tamil
-        """
-        prompt = f"""
-        Translate the following text to English.
-        Original language may be: English, Chinese, Malay, or Tamil.
-        
-        Text: {text}
-        
-        Provide only the English translation.
-        """
-        
-        response = self.model.generate_content(prompt)
-        return response.text
-    
-    def chat(self, user_message, context=""):
-        """
-        General chat functionality for the senior citizen
-        """
-        prompt = f"""
-        You are a helpful assistant for senior citizens in Singapore using GRAB delivery service.
-        Be polite, clear, and use simple language.
-        
-        Context: {context}
-        User message: {user_message}
-        
-        Provide a helpful response.
-        """
-        
-        response = self.model.generate_content(prompt)
-        return response.text
+    def __init__(self):
+        # Initialize Gemini API client
+        self.client = openai.ChatCompletion.create(api_key='YOUR_API_KEY')
+
+    def search_restaurant(self, query, language='en', dietary_restrictions=None, price_preference=None):
+        # Logic for searching restaurant based on query, language, dietary restrictions and price preferences
+        pass
+
+    def translate(self, text, target_language):
+        # Logic for translating text to the target language
+        pass
+
+    def handle_user_input(self, user_input):
+        # Analyze user input and provide response
+        pass
+
+if __name__ == '__main__':
+    chatbot = AIChatbot()
+    # Example of how the bot might be used
+    print(bot.search_restaurant('best vegan restaurants', language='en', dietary_restrictions='vegan', price_preference='moderate'))
