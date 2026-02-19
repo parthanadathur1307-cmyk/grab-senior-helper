@@ -1,16 +1,20 @@
 import sqlite3
 import json
+from datetime import datetime
 from typing import List, Dict, Optional
 
-class Database:
-    def __init__(self, db_name='grab_helper.db'):
-        self.conn = sqlite3.connect(db_name, check_same_thread=False)
-        self.cursor = self.conn.cursor()
-        self.create_tables()
-    
-    def create_tables(self):
+class DatabaseManager:
+    def __init__(self, db_path="senior_helper.db"):
+        self.db_path = db_path
+        self.init_database()
+
+    def init_database(self):
+        """Initialize database with required tables"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
         # Restaurants table
-        self.cursor.execute('''
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS restaurants (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
@@ -20,93 +24,154 @@ class Database:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        
+
         # Menus table
-        self.cursor.execute('''
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS menus (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 restaurant_id INTEGER NOT NULL,
-                menu_json TEXT NOT NULL,
+                name TEXT,
                 uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(restaurant_id) REFERENCES restaurants(id)
+                FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
             )
         ''')
-        
+
         # Dishes table
-        self.cursor.execute('''
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS dishes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 restaurant_id INTEGER NOT NULL,
+                menu_id INTEGER,
                 name TEXT NOT NULL,
                 description TEXT,
                 price REAL,
                 dietary_tags TEXT,
-                category TEXT,
-                FOREIGN KEY(restaurant_id) REFERENCES restaurants(id)
+                ingredients TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (restaurant_id) REFERENCES restaurants(id),
+                FOREIGN KEY (menu_id) REFERENCES menus(id)
             )
         ''')
-        
-        self.conn.commit()
-    
+
+        conn.commit()
+        conn.close()
+
     def add_restaurant(self, name: str, rating: float = 0, cuisine_type: str = "", price_range: str = ""):
+        """Add a new restaurant"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         try:
-            self.cursor.execute('''
+            cursor.execute('''
                 INSERT INTO restaurants (name, rating, cuisine_type, price_range)
                 VALUES (?, ?, ?, ?)
             ''', (name, rating, cuisine_type, price_range))
-            self.conn.commit()
-            return self.cursor.lastrowid
+            conn.commit()
+            restaurant_id = cursor.lastrowid
+            conn.close()
+            return restaurant_id
         except sqlite3.IntegrityError:
+            conn.close()
             return None
-    
+
+    def add_dish(self, restaurant_id: int, name: str, description: str = "", price: float = 0, 
+                 dietary_tags: str = "", ingredients: str = "", menu_id: int = None):
+        """Add a dish to a restaurant"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO dishes (restaurant_id, menu_id, name, description, price, dietary_tags, ingredients)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (restaurant_id, menu_id, name, description, price, dietary_tags, ingredients))
+        conn.commit()
+        dish_id = cursor.lastrowid
+        conn.close()
+        return dish_id
+
+    def search_dishes(self, query: str, dietary_restrictions: List[str] = None, max_price: float = None) -> List[Dict]:
+        """Search dishes by name, description, or ingredients with filters"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Build the query
+        sql = '''
+            SELECT d.id, d.name, d.description, d.price, d.dietary_tags, 
+                   r.name as restaurant_name, r.rating
+            FROM dishes d
+            JOIN restaurants r ON d.restaurant_id = r.id
+            WHERE (d.name LIKE ? OR d.description LIKE ? OR d.ingredients LIKE ?)
+        '''
+        params = [f"%{query}%, f"%{query}%, f"%{query}%"]
+
+        # Add price filter
+        if max_price is not None:
+            sql += " AND d.price <= ?"
+            params.append(max_price)
+
+        # Add dietary restrictions filter
+        if dietary_restrictions:
+            for restriction in dietary_restrictions:
+                sql += f" AND d.dietary_tags NOT LIKE ?"
+                params.append(f"%{restriction}%")
+
+        sql += " ORDER BY r.rating DESC"
+
+        cursor.execute(sql, params)
+        results = cursor.fetchall()
+        conn.close()
+
+        dishes = []
+        for row in results:
+            dishes.append({
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'price': row[3],
+                'dietary_tags': row[4],
+                'restaurant_name': row[5],
+                'rating': row[6]
+            })
+
+        return dishes
+
     def get_all_restaurants(self) -> List[Dict]:
-        self.cursor.execute('SELECT * FROM restaurants')
-        columns = [description[0] for description in self.cursor.description]
-        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
-    
-    def get_restaurant_by_name(self, name: str) -> Optional[Dict]:
-        self.cursor.execute('SELECT * FROM restaurants WHERE name = ?', (name,))
-        row = self.cursor.fetchone()
-        if row:
-            columns = [description[0] for description in self.cursor.description]
-            return dict(zip(columns, row))
-        return None
-    
-    def add_dishes(self, restaurant_id: int, dishes: List[Dict]):
-        for dish in dishes:
-            dietary_tags = json.dumps(dish.get('dietary_tags', []))
-            self.cursor.execute('''
-                INSERT INTO dishes (restaurant_id, name, description, price, dietary_tags, category)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (
-                restaurant_id,
-                dish.get('name', ''),
-                dish.get('description', ''),
-                dish.get('price', 0),
-                dietary_tags,
-                dish.get('category', '')
-            ))
-        self.conn.commit()
-    
-    def get_dishes_by_restaurant(self, restaurant_id: int) -> List[Dict]:
-        self.cursor.execute('SELECT * FROM dishes WHERE restaurant_id = ?', (restaurant_id,))
-        columns = [description[0] for description in self.cursor.description]
-        results = []
-        for row in self.cursor.fetchall():
-            dish = dict(zip(columns, row))
-            dish['dietary_tags'] = json.loads(dish['dietary_tags'])
-            results.append(dish)
-        return results
-    
-    def get_all_dishes(self) -> List[Dict]:
-        self.cursor.execute('SELECT * FROM dishes')
-        columns = [description[0] for description in self.cursor.description]
-        results = []
-        for row in self.cursor.fetchall():
-            dish = dict(zip(columns, row))
-            dish['dietary_tags'] = json.loads(dish['dietary_tags'])
-            results.append(dish)
-        return results
-    
-    def close(self):
-        self.conn.close()
+        """Get all restaurants from database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, name, rating, cuisine_type, price_range FROM restaurants ORDER BY rating DESC')
+        results = cursor.fetchall()
+        conn.close()
+
+        restaurants = []
+        for row in results:
+            restaurants.append({
+                'id': row[0],
+                'name': row[1],
+                'rating': row[2],
+                'cuisine_type': row[3],
+                'price_range': row[4]
+            })
+        return restaurants
+
+    def get_restaurant_dishes(self, restaurant_id: int) -> List[Dict]:
+        """Get all dishes for a specific restaurant"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, name, description, price, dietary_tags
+            FROM dishes
+            WHERE restaurant_id = ?
+            ORDER BY name
+        ''', (restaurant_id,))
+        results = cursor.fetchall()
+        conn.close()
+
+        dishes = []
+        for row in results:
+            dishes.append({
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'price': row[3],
+                'dietary_tags': row[4]
+            })
+        return dishes
