@@ -1,0 +1,10 @@
+[theme]
+   base = "dark"
+   primaryColor = "#FF5733"
+   fontSize = "20pt"
+   fontFamily = "Arial"
+
+[server]
+   headless = true
+   enableCORS = false
+   port = 8501
