@@ -25,7 +25,6 @@ class AIChatbot:
         - Rating of restaurants
         
         Provide a clear recommendation with restaurant name, dish, price, and reason.
-        Keep response simple for senior citizens.
         """
         
         response = self.model.generate_content(prompt)
@@ -45,7 +44,6 @@ class AIChatbot:
         Find and recommend dishes that match the user's request.
         Consider dietary restrictions and price preferences if mentioned.
         Provide dish name, description, and price.
-        Keep response simple and clear.
         """
         
         response = self.model.generate_content(prompt)
@@ -75,12 +73,11 @@ class AIChatbot:
         prompt = f"""
         You are a helpful assistant for senior citizens in Singapore using GRAB delivery service.
         Be polite, clear, and use simple language.
-        Avoid technical jargon.
         
         Context: {context}
         User message: {user_message}
         
-        Provide a helpful response in simple words.
+        Provide a helpful response.
         """
         
         response = self.model.generate_content(prompt)
