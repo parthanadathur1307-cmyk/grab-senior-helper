@@ -1,7 +1,7 @@
 streamlit
+pdfplumber
+pytesseract
+pdf2image
 google-generativeai
 sqlite3
-pdf2image
-pytesseract
-pillow
-pandas
+Pillow
