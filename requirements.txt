@@ -1,0 +1,7 @@
+streamlit
+google-generativeai
+sqlite3
+pdf2image
+pytesseract
+pillow
+pandas
