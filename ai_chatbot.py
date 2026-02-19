@@ -1,31 +1,43 @@
 import requests
 
-class GoogleGeminiAI:
+class AICustomerSupportChatbot:
     def __init__(self, api_key):
         self.api_key = api_key
 
-    def search_restaurant(self, query):
-        url = f"https://api.googleapis.com/gemini/restaurant?query={query}&key={self.api_key}"
-        response = requests.get(url)
+    def search_restaurants(self, query):
+        # Function to search for restaurants
+        # This is a placeholder URL, should be replaced with the actual API endpoint
+        url = "https://api.example.com/restaurants"
+        params = {"query": query, "api_key": self.api_key}
+        response = requests.get(url, params=params)
         return response.json()
 
-    def search_menu(self, restaurant_id):
-        url = f"https://api.googleapis.com/gemini/menu?restaurant_id={restaurant_id}&key={self.api_key}"
-        response = requests.get(url)
+    def search_menu_items(self, restaurant_name):
+        # Function to search for menu items in a restaurant
+        url = f"https://api.example.com/menus/{restaurant_name}"
+        params = {"api_key": self.api_key}
+        response = requests.get(url, params=params)
         return response.json()
 
+    def translate_request(self, request, target_language):
+        # Function to translate user requests
+        url = "https://api.example.com/translate"
+        data = {"text": request, "target_language": target_language, "api_key": self.api_key}
+        response = requests.post(url, json=data)
+        return response.json()
 
-def main():
-    api_key = 'YOUR_API_KEY_HERE'
-    gemini_ai = GoogleGeminiAI(api_key)
+    def general_chat(self, user_input):
+        # Function for general chat
+        # This is a placeholder URL, should be replaced with the actual chat endpoint
+        url = "https://api.example.com/chat"
+        data = {"input": user_input, "api_key": self.api_key}
+        response = requests.post(url, json=data)
+        return response.json()
 
-    restaurant_query = input("Enter the name of the restaurant: ")
-    results = gemini_ai.search_restaurant(restaurant_query)
-    print("Restaurant Search Results:", results)
-
-    restaurant_id = input("Enter the restaurant ID for menu search: ")
-    menu_results = gemini_ai.search_menu(restaurant_id)
-    print("Menu Search Results:", menu_results)
-
-if __name__ == '__main__':
-    main()
+# Example Usage
+if __name__ == "__main__":
+    chatbot = AICustomerSupportChatbot(api_key="your_api_key_here")
+    print(chatbot.search_restaurants("Italian food"))
+    print(chatbot.search_menu_items("Pizza Place"))
+    print(chatbot.translate_request("How do I order?", "es"))
+    print(chatbot.general_chat("Hello, how can I get help?"))
