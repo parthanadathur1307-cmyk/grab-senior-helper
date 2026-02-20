@@ -40,7 +40,7 @@ db = Database('grab_helper.db')
 api_key = os.getenv('GOOGLE_API_KEY', 'YOUR_API_KEY_HERE')
 if api_key != 'YOUR_API_KEY_HERE':
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     model = None
     st.warning("⚠️ Please set GOOGLE_API_KEY environment variable")

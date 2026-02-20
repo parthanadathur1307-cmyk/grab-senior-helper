@@ -79,7 +79,7 @@ def configure_gemini(api_key):
 def search_with_ai(user_query, dietary_restrictions, price_range, menu_data):
     """Use Google Gemini to find best restaurants/dishes"""
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
 You are a helpful assistant for senior citizens looking for food in Singapore via GRAB delivery.
 Be clear, simple, and friendly.
@@ -206,7 +206,7 @@ with tab3:
             
             with st.spinner("Thinking..."):
                 try:
-                    model = genai.GenerativeModel('gemini-pro')
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     response = model.generate_content(
                         f"You are a helpful assistant for senior citizens. Answer simply and clearly. User: {user_input}"
                     )
